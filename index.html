@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#FFFFFF">
+<title>Student Services Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&family=Tajawal:wght@500;700&display=swap" rel="stylesheet">
+<style>
+/*
+VOICE: a calm, confident campus utility; says exactly where and when.
+IDEA: a departure board for student life (influence: Flighty, Apple Wallet, Calendar day view).
+PICTURE: the next-class board, full bleed, in the course's own colour, with a live countdown.
+COLOUR and TYPE: white and stone grey; one strong colour per course; Barlow / Barlow Condensed numerals.
+LAYOUT: each section has its own form: board, time ribbon, date blocks, journey trackers, pass.
+*/
+:root{color-scheme:light;
+  --paper:#FFFFFF; --stone:#F1F1EE; --line:#E2E2DD; --ink:#15171A; --ink2:#5F636B; --ink3:#9A9EA6;
+  --act:#0B5D66; --act-soft:#E3F0F1;
+  --mis445:#E4572E; --mis420:#17866F; --mis430:#3D52A0; --mgt301:#C9971A; --eng202:#8E3B8A;
+  --ok:#17866F; --wait:#C9971A;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Barlow",system-ui,sans-serif;background:#CFD2CC;color:var(--ink);-webkit-font-smoothing:antialiased;font-size:17px;line-height:1.35}
+.num,.cond{font-family:"Barlow Condensed","Barlow",sans-serif}
+.ar,[lang=ar]{font-family:"Tajawal",sans-serif}
+button,input,select,textarea{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+a{color:inherit;text-decoration:none}
+:focus-visible{outline:3px solid #5AA9B2;outline-offset:2px}
+.phone{max-width:430px;height:100vh;height:100dvh;margin:0 auto;background:var(--paper);position:relative;display:flex;flex-direction:column;overflow:hidden}
+@media (min-width:600px){.phone{height:min(860px,calc(100vh - 48px));margin:24px auto;border-radius:46px;box-shadow:0 0 0 11px #17191c}}
+.status{height:46px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 28px 0 32px;font-size:16px;font-weight:600;position:relative;z-index:6}
+.status.inv{color:#fff}
+.status .icons{display:flex;gap:6px;align-items:center}
+.screen{flex:1;overflow-y:auto;padding-bottom:28px}
+/* top bars */
+.top{display:flex;align-items:flex-end;justify-content:space-between;padding:4px 20px 14px}
+.top h1{font-size:34px;font-weight:700;line-height:1.05;letter-spacing:-.3px}
+.top .date{font-size:15px;color:var(--ink2);margin-bottom:4px}
+.top .date .ar{font-size:13px}
+.avatar{width:42px;height:42px;border-radius:50%;background:var(--stone);border:1.5px solid var(--line);display:grid;place-items:center;font-weight:600;font-size:15px;flex:none}
+.bar{display:flex;align-items:center;min-height:44px;padding:2px 12px;position:sticky;top:0;background:var(--paper);z-index:4;border-bottom:1px solid transparent}
+.bar .back{display:flex;align-items:center;gap:4px;color:var(--act);font-weight:500;padding:6px 8px;min-height:44px}
+.bar .mid{position:absolute;left:0;right:0;text-align:center;font-weight:600;pointer-events:none}
+.bar .end{margin-left:auto;color:var(--act);font-weight:600;padding:6px 8px;min-height:44px}
+.h2{font-size:22px;font-weight:700;padding:26px 20px 10px;display:flex;justify-content:space-between;align-items:baseline;letter-spacing:-.1px}
+.h2 button{font-size:16px;font-weight:500;color:var(--act)}
+.h3{font-size:15px;color:var(--ink2);padding:20px 20px 8px}
+.note{font-size:14px;color:var(--ink2);padding:10px 20px 0;max-width:40ch}
+/* the board */
+.board{display:block;width:100%;text-align:left;color:#fff;padding:18px 20px 20px;position:relative}
+.board .lead{display:flex;justify-content:space-between;align-items:baseline;font-size:15px;opacity:.9}
+.board .code{font-family:"Barlow Condensed";font-weight:700;font-size:68px;line-height:.95;margin-top:10px;letter-spacing:-.5px}
+.board .name{font-size:19px;font-weight:500;margin-top:2px}
+.board .count{font-family:"Barlow Condensed";font-weight:600;font-size:22px}
+.board .fields{display:grid;grid-template-columns:1.1fr 1.3fr 1fr;margin-top:18px;border-top:1px solid rgba(255,255,255,.35);padding-top:12px;gap:8px}
+.board .fields small{display:block;font-size:13px;opacity:.8}
+.board .fields b{font-family:"Barlow Condensed";font-weight:600;font-size:24px;line-height:1.1;white-space:nowrap}
+/* time ribbon */
+.ribbon{margin:16px 20px 0;position:relative;height:58px}
+.ribbon .track{position:absolute;left:0;right:0;top:16px;height:26px;background:var(--stone);border-radius:6px}
+.ribbon .blk{position:absolute;top:16px;height:26px;border-radius:6px;color:#fff;font-size:13px;font-weight:600;display:flex;align-items:center;padding-left:7px;white-space:nowrap;overflow:hidden}
+.ribbon .nowl{position:absolute;top:8px;height:42px;width:2px;background:var(--ink)}
+.ribbon .nowl::before{content:"";position:absolute;top:-4px;left:-4px;width:10px;height:10px;border-radius:50%;background:var(--ink)}
+.ribbon .ticks{position:absolute;left:0;right:0;top:44px;display:flex;justify-content:space-between;font-size:12px;color:var(--ink3)}
+/* lists */
+.list{margin:0 20px;border-top:1px solid var(--line)}
+.li{display:flex;gap:14px;align-items:center;padding:13px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.li .grow{flex:1;min-width:0}
+.li .t{font-size:17px;font-weight:500}
+.li .d{font-size:14px;color:var(--ink2);margin-top:1px}
+.li .v{color:var(--ink2);white-space:nowrap}
+.chev{width:8px;height:13px;flex:none;color:var(--ink3)}
+.datebox{width:46px;flex:none;text-align:center;border-radius:10px;padding:4px 0 5px;background:var(--stone)}
+.datebox small{display:block;font-size:12px;color:var(--ink2);font-weight:500}
+.datebox b{font-family:"Barlow Condensed";font-size:26px;line-height:1;font-weight:600}
+.datebox.soon{background:var(--ink);color:#fff}.datebox.soon small{color:rgba(255,255,255,.75)}
+.cc{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:6px;vertical-align:1px}
+.left{font-family:"Barlow Condensed";font-weight:600;font-size:18px;white-space:nowrap}
+.left.hot{color:var(--mis445)}
+/* journey tracker */
+.trk{padding:14px 0;border-bottom:1px solid var(--line);display:block}
+.trk .row1{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.trk .t{font-size:17px;font-weight:600}
+.trk .st{font-family:"Barlow Condensed";font-weight:600;font-size:19px;white-space:nowrap}
+.trk .meta{font-size:14px;color:var(--ink2);margin-top:1px}
+.path{display:flex;align-items:center;margin-top:12px}
+.path i{width:12px;height:12px;border-radius:50%;border:2.5px solid var(--line);background:var(--paper);flex:none}
+.path i.on{border-color:var(--act);background:var(--act)}
+.path i.cur{border-color:var(--act);background:var(--paper);box-shadow:0 0 0 4px var(--act-soft)}
+.path span{flex:1;height:3px;background:var(--line)}
+.path span.on{background:var(--act)}
+.labels{display:flex;justify-content:space-between;font-size:12px;color:var(--ink3);margin-top:5px}
+/* big status */
+.big{padding:6px 20px 0}
+.big .k{font-size:15px;color:var(--ink2)}
+.big .s{font-family:"Barlow Condensed";font-weight:700;font-size:52px;line-height:1;margin-top:4px}
+.big .r{font-family:"Barlow Condensed";font-weight:500;font-size:20px;color:var(--ink2);margin-top:4px;letter-spacing:.3px}
+.journey{margin:22px 20px 0;padding:0}
+.journey li{list-style:none;display:grid;grid-template-columns:22px 1fr;gap:12px;position:relative;padding-bottom:18px}
+.journey li::before{content:"";position:absolute;left:10px;top:22px;bottom:-2px;width:3px;background:var(--line)}
+.journey li:last-child::before{display:none}
+.journey li.done::before{background:var(--act)}
+.journey .n{width:22px;height:22px;border-radius:50%;border:3px solid var(--line);background:var(--paper);display:grid;place-items:center}
+.journey li.done .n{background:var(--act);border-color:var(--act);color:#fff}
+.journey li.now .n{border-color:var(--act);box-shadow:0 0 0 5px var(--act-soft)}
+.journey .n svg{width:12px;height:12px}
+.journey .s{font-weight:600;font-size:17px}
+.journey li:not(.done):not(.now) .s{color:var(--ink3);font-weight:500}
+.journey .w{font-size:14px;color:var(--ink2)}
+.facts{display:grid;grid-template-columns:1fr 1fr;margin:8px 20px 0;border-top:1px solid var(--line)}
+.facts div{padding:12px 0;border-bottom:1px solid var(--line)}
+.facts div:nth-child(odd){padding-right:12px}
+.facts small{display:block;font-size:13px;color:var(--ink2)}
+.facts b{font-weight:600;font-size:17px}
+/* day view */
+.week{display:flex;padding:0 14px 8px;gap:4px}
+.week button{flex:1;padding:6px 0;border-radius:999px;text-align:center}
+.week .wd{font-size:13px;color:var(--ink2);display:block}
+.week .dn{font-family:"Barlow Condensed";font-size:24px;font-weight:600;display:block;width:38px;height:38px;line-height:38px;margin:2px auto 0;border-radius:50%}
+.week button[aria-pressed="true"] .dn{background:var(--ink);color:#fff}
+.week button.today:not([aria-pressed="true"]) .dn{color:var(--mis445)}
+.day{position:relative;margin:6px 20px 0 0;height:calc(9 * 64px)}
+.hr{position:absolute;left:0;right:0;height:64px;border-top:1px solid var(--line);font-size:12px;color:var(--ink3)}
+.hr span{position:absolute;left:12px;top:-8px;background:var(--paper);padding-right:6px;width:48px}
+.ev{position:absolute;left:66px;right:0;border-radius:6px;padding:7px 10px;overflow:hidden;border-left:4px solid}
+.ev b{display:block;font-weight:600;font-size:16px}
+.ev small{font-size:13px;color:var(--ink2)}
+.ev .tm{font-family:"Barlow Condensed";font-size:15px;font-weight:600}
+.nowline{position:absolute;left:58px;right:0;border-top:2px solid var(--mis445);z-index:2}
+.nowline::before{content:"";position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:var(--mis445)}
+.free{position:absolute;left:66px;right:0;top:40%;text-align:center;color:var(--ink2);font-size:15px}
+/* forms */
+.opts{margin:0 20px}
+.opt{display:flex;gap:14px;align-items:flex-start;padding:14px 0;border-bottom:1px solid var(--line);width:100%;text-align:left}
+.opt .sq{width:6px;align-self:stretch;border-radius:3px;flex:none}
+.opt .t{font-weight:600}
+.opt .d{font-size:14px;color:var(--ink2);margin-top:2px}
+.opt .fee{margin-left:auto;font-family:"Barlow Condensed";font-weight:600;font-size:18px;white-space:nowrap;padding-left:10px}
+.lab{font-size:14px;color:var(--ink2);padding:18px 20px 8px;display:block}
+.chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 20px}
+.chips button{border:1.5px solid var(--line);border-radius:999px;padding:8px 14px;font-size:15px;font-weight:500}
+.chips button[aria-pressed="true"]{border-color:var(--ink);background:var(--ink);color:#fff}
+.chips button:disabled{color:var(--ink3);text-decoration:line-through;border-style:dashed}
+textarea{display:block;width:calc(100% - 40px);margin:0 20px;border:1.5px solid var(--line);border-radius:12px;padding:12px;min-height:78px;resize:none;font-size:16px}
+.sum{margin:20px 20px 0;padding:14px 16px;background:var(--stone);border-radius:12px;display:flex;justify-content:space-between;font-size:15px}
+.sum b{font-family:"Barlow Condensed";font-size:20px;font-weight:600}
+.btn{display:block;width:calc(100% - 40px);margin:20px 20px 0;background:var(--act);color:#fff;border-radius:14px;padding:15px;font-size:17px;font-weight:600;text-align:center}
+.btn.ghost{background:transparent;color:var(--act);border:1.5px solid var(--line)}
+.btn.red{background:transparent;color:#B3261E;border:1.5px solid var(--line)}
+.btn:disabled{background:var(--line);color:var(--ink3)}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 20px}
+.slots button{border:1.5px solid var(--line);border-radius:10px;padding:11px 0;font-family:"Barlow Condensed";font-size:19px;font-weight:600}
+.slots button[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.slots button:disabled{color:var(--ink3);border-style:dashed;text-decoration:line-through}
+/* grades */
+.gpa{display:flex;gap:28px;padding:0 20px;align-items:flex-end}
+.gpa b{font-family:"Barlow Condensed";font-size:56px;font-weight:700;line-height:1}
+.gpa small{display:block;font-size:14px;color:var(--ink2)}
+.terms{display:flex;gap:6px;align-items:flex-end;height:56px}
+.terms div{width:26px;border-radius:4px 4px 0 0;background:var(--line);position:relative}
+.terms div.cur{background:var(--act)}
+.terms span{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:11px;color:var(--ink3);white-space:nowrap}
+.meter{height:8px;background:var(--stone);border-radius:4px;overflow:hidden;margin-top:7px}
+.meter i{display:block;height:100%}
+.score{font-family:"Barlow Condensed";font-weight:600;font-size:20px;white-space:nowrap}
+.tr{display:grid;grid-template-columns:72px 1fr 34px;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);font-size:15px;align-items:baseline}
+.tr .g{font-family:"Barlow Condensed";font-weight:700;font-size:20px;text-align:right}
+.tr .c{font-weight:600}
+/* pass */
+.pass{margin:4px 20px 0;border-radius:18px;background:#123B3F;color:#fff;padding:18px 18px 16px;position:relative;overflow:hidden}
+.pass .rowp{display:flex;justify-content:space-between;align-items:flex-start}
+.pass .org{font-weight:600;font-size:15px;opacity:.9}
+.pass .org .ar{display:block;font-size:13px;opacity:.85;margin-top:1px}
+.pass .yr{font-family:"Barlow Condensed";font-size:18px;font-weight:600;opacity:.9}
+.pass .nm{font-size:26px;font-weight:700;margin-top:26px;line-height:1.1}
+.pass .pg{font-size:15px;opacity:.85}
+.pass .pf{display:grid;grid-template-columns:1.3fr 1fr;margin-top:16px;gap:8px}
+.pass .pf small{display:block;font-size:12px;opacity:.75}
+.pass .pf b{font-family:"Barlow Condensed";font-size:22px;font-weight:600;letter-spacing:.4px}
+.pass .code{margin-top:16px;background:#fff;border-radius:10px;padding:10px 12px 6px;color:var(--ink);text-align:center}
+.pass .code svg{width:100%;height:54px;display:block}
+.pass .code small{font-family:"Barlow Condensed";font-size:15px;letter-spacing:2px}
+.sw{width:51px;height:44px;position:relative;flex:none}
+.sw::before{content:"";position:absolute;left:0;top:6.5px;width:51px;height:31px;border-radius:16px;background:#DADAD5;transition:background .2s}
+.sw::after{content:"";position:absolute;top:8.5px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.sw[aria-checked="true"]::before{background:var(--act)}
+.sw[aria-checked="true"]::after{transform:translateX(20px)}
+/* tabbar */
+.tabbar{flex:none;display:flex;background:var(--paper);border-top:1px solid var(--line);padding:7px 0 24px}
+.tabbar button{flex:1;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;font-weight:600;color:var(--ink3);position:relative}
+.tabbar svg{width:26px;height:26px}
+.tabbar button[aria-current="page"]{color:var(--ink)}
+.badge{position:absolute;top:-2px;left:calc(50% + 7px);background:var(--mis445);color:#fff;font-size:11px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:grid;place-items:center;padding:0 5px}
+.toast{position:absolute;left:20px;right:20px;bottom:100px;background:var(--ink);color:#fff;border-radius:14px;padding:13px 15px;font-size:15px;display:flex;gap:10px;align-items:center;transform:translateY(16px);opacity:0;transition:.25s;pointer-events:none;z-index:20}
+.toast.show{transform:none;opacity:1}
+.toast svg{width:20px;height:20px;color:#6FD3BE;flex:none}
+/* welcome */
+.welcome{min-height:100%;display:flex;flex-direction:column;background:#123B3F;color:#fff;padding:10px 24px 34px}
+.wtext{display:flex;flex-direction:column;flex:1}
+.welcome .stack{margin-top:22px;display:grid;gap:8px}
+.welcome .tkt{border-radius:12px;padding:12px 14px;color:#fff;display:flex;justify-content:space-between;align-items:baseline}
+.welcome .tkt b{font-family:"Barlow Condensed";font-size:30px;font-weight:700}
+.welcome .tkt span{font-size:14px;opacity:.9;text-align:right}
+.welcome h1{font-size:36px;line-height:1.08;margin-top:34px;letter-spacing:-.3px}
+.welcome p{opacity:.85;margin-top:12px;font-size:17px;max-width:32ch}
+.welcome .ar{font-size:15px;opacity:.8;margin-top:8px;display:block}
+.welcome .go{margin-top:auto;background:#fff;color:#123B3F;border-radius:14px;padding:15px;font-weight:700;font-size:17px;width:100%}
+.welcome small{display:block;text-align:center;opacity:.7;font-size:13px;margin-top:12px}
+.welcome .lang{display:inline-flex;align-self:flex-start;border:1.5px solid rgba(255,255,255,.35);border-radius:999px;padding:3px;margin-top:30px}
+.welcome .lang button{color:#fff;font-size:14px;font-weight:600;padding:7px 15px;border-radius:999px;min-height:36px}
+.welcome .lang button[aria-pressed=true]{background:#fff;color:#123B3F}
+.welcome .arline{font-family:"Tajawal",sans-serif;font-size:21px;font-weight:500;opacity:.85;margin-top:10px;display:block}
+.welcome .btns{display:flex;flex-direction:column;gap:10px;margin-top:auto;padding-top:26px}
+.welcome .btns button{border-radius:14px;padding:15px;font-weight:700;font-size:17px;width:100%}
+.welcome .sso{background:#fff;color:#123B3F}
+.welcome .demo{border:1.5px solid rgba(255,255,255,.45);color:#fff}
+.welcome .phoneqr{display:none}
+.welcome .wtext{display:flex;flex-direction:column;flex:1}
+.welcome .wtext[dir=rtl]{font-family:"Tajawal",sans-serif}
+.welcome .wtext[dir=rtl] h1{letter-spacing:0;line-height:1.3}
+.welcome .wtext[dir=rtl] .lang{align-self:flex-start}
+.welcome .wtext[dir=rtl] small{text-align:right}
+
+.stage{display:block}
+.side,.deskonly{display:none}
+.tabbar .signout{display:none}
+.cols{display:block}
+@media (min-width:1000px){
+ body{background:var(--paper)}
+ .phone{max-width:none;width:100%;height:100vh;margin:0;border-radius:0;box-shadow:none;display:grid;grid-template-columns:264px minmax(0,1fr)}
+ .phone.out{grid-template-columns:minmax(0,1fr)}
+ .status{display:none}
+ .deskonly{display:block}
+ .tabbar{grid-column:1;grid-row:1;flex-direction:column;align-items:stretch;border-top:0;border-right:1px solid var(--line);padding:26px 16px 22px;gap:2px;background:var(--stone);overflow-y:auto}
+ .tabbar .brand{padding:0 12px 22px}
+ .tabbar .brand b{display:block;font-family:"Barlow Condensed";font-size:30px;font-weight:700;line-height:1}
+ .tabbar .brand span{font-size:14px;color:var(--ink2)}
+ .tabbar .brand .ar{display:block;font-size:13px;margin-top:2px}
+ .tabbar button{flex:none;flex-direction:row;gap:12px;font-size:16px;font-weight:500;padding:10px 12px;border-radius:10px;color:var(--ink2);justify-content:flex-start}
+ .tabbar button span:not(.badge){order:1}
+ .tabbar button .badge{order:2;position:static;margin-left:auto}
+ .tabbar button:hover{color:var(--ink)}
+ .tabbar button[aria-current="page"]{background:var(--paper);color:var(--ink);font-weight:600}
+ .tabbar svg{width:22px;height:22px}
+ .tabbar .team{margin-top:auto;padding:16px 12px 0;border-top:1px solid var(--line);font-size:13px;color:var(--ink2);line-height:1.5}
+ .tabbar .team b{display:block;color:var(--ink);font-weight:600;margin-bottom:2px}
+ .tabbar .me{display:flex;gap:10px;align-items:center;padding:14px 12px 4px;font-size:14px}
+ .tabbar .me .avatar{width:36px;height:36px;font-size:13px}
+ .tabbar .signout{display:block;margin:10px 12px 0;padding:9px 12px;border:1.5px solid var(--line,#d8d6cf);border-radius:10px;color:#B42318;font-weight:600;font-size:14px;text-align:left;min-height:40px}
+ .tabbar .signout:hover{background:#fff}
+ .screen{grid-column:2;grid-row:1;padding:34px 48px 56px}
+ .phone.out .screen{grid-column:1;padding:0}
+ .wrap{max-width:1120px;margin:0 auto}
+ .top{padding:0 0 18px}
+ .top h1{font-size:40px}
+ .top a.avatar{display:none}
+ .bar{padding:0;margin:-10px 0 8px;position:static}
+ .bar .mid{display:none}
+ .h2{padding:30px 0 10px}.h3{padding:22px 0 8px}.note{padding:12px 0 0}
+ .list,.opts,.facts,.journey,.ribbon{margin-left:0;margin-right:0}
+ .big,.chips,.lab,.slots{padding-left:0;padding-right:0}
+ .btn{width:auto;display:inline-block;margin:24px 10px 0 0;padding:13px 28px}
+ textarea{width:100%;margin:0}
+ .sum{margin:20px 0 0}
+ .narrow{max-width:680px}
+ .board{border-radius:18px;padding:26px 30px 28px}
+ .board .code{font-size:104px}
+ .board .name{font-size:22px}
+ .board .fields{max-width:640px}
+ .board .fields b{font-size:28px}
+ .cols{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:48px;align-items:start}
+ .cols>section{min-width:0}
+ .cols>section>.h2:first-child{padding-top:0}
+ .ribbon{height:64px}
+ .pass{margin:0;max-width:440px}
+ .toast{left:auto;right:32px;bottom:32px;width:380px}
+ .weekgrid{display:grid;grid-template-columns:56px repeat(5,minmax(0,1fr));border-top:1px solid var(--line);margin-top:6px}
+ .wg-h{padding:10px 8px;border-bottom:1px solid var(--line);font-size:14px;color:var(--ink2)}
+ .wg-h b{font-family:"Barlow Condensed";font-size:26px;color:var(--ink);font-weight:600;margin-left:4px}
+ .wg-h.today b{color:var(--mis445)}
+ .wg-col{position:relative;border-left:1px solid var(--line)}
+ .wg-col.today{background:#FAFAF8}
+ .wg-t{position:relative}
+ .wg-t span{position:absolute;right:8px;font-size:12px;color:var(--ink3);transform:translateY(-50%)}
+ .wg-line{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+ .wg-col .ev{left:6px;right:6px}
+ .welcome{min-height:100vh;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:center;gap:8vw;padding:60px 9vw}
+ .welcome .stack{order:2;margin:0}
+ .welcome .tkt{padding:20px 22px}
+ .welcome .tkt b{font-size:44px}
+ .welcome .tkt span{font-size:16px}
+ .welcome h1{font-size:54px;margin-top:0}
+ .welcome .go{width:auto;padding:16px 34px;margin-top:34px}
+ .welcome small{text-align:left}
+ .welcome .wtext{display:flex;flex-direction:column}
+ .welcome .lang{margin:0 0 26px}
+ .welcome .btns{flex-direction:row;margin-top:30px;padding-top:0}
+ .welcome .btns button{width:auto;padding:16px 30px}
+ .welcome .phoneqr{display:flex;gap:18px;align-items:center;border-top:1px solid rgba(255,255,255,.18);margin-top:32px;padding-top:24px}
+ .welcome .phoneqr .qr{width:112px;height:112px;background:#fff;border-radius:10px;padding:9px;flex:none}
+ .welcome .phoneqr .qr svg{width:100%;height:100%;display:block}
+ .welcome .phoneqr b{display:block;font-size:18px;margin-bottom:4px}
+ .welcome .phoneqr p{margin:0;font-size:16px;max-width:30ch}
+
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage">
+
+<div class="phone" id="phone">
+  <div class="status" id="status" aria-hidden="true"><span id="clock">9:41</span><span class="icons">
+    <svg width="18" height="12" viewBox="0 0 18 12"><rect x="0" y="8" width="3" height="4" rx="1" fill="currentColor"/><rect x="5" y="5.5" width="3" height="6.5" rx="1" fill="currentColor"/><rect x="10" y="3" width="3" height="9" rx="1" fill="currentColor"/><rect x="15" y="0" width="3" height="12" rx="1" fill="currentColor"/></svg>
+    <svg width="16" height="12" viewBox="0 0 16 12"><path d="M8 2.5c2.3 0 4.4.9 6 2.4l1-1.1C13.1 2 10.7 1 8 1S2.9 2 1 3.8l1 1.1c1.6-1.5 3.7-2.4 6-2.4zm0 3c1.5 0 2.8.6 3.8 1.5l1-1.1C11.6 4.7 9.9 4 8 4s-3.6.7-4.8 1.9l1 1.1c1-.9 2.3-1.5 3.8-1.5zm0 3c.7 0 1.3.3 1.7.7L8 11 6.3 9.2c.4-.4 1-.7 1.7-.7z" fill="currentColor"/></svg>
+    <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" fill="none" stroke="currentColor" opacity=".4"/><rect x="2" y="2" width="15" height="9" rx="2" fill="currentColor"/><path d="M25 4.5v4c.8-.3 1.3-1.1 1.3-2s-.5-1.7-1.3-2z" fill="currentColor" opacity=".4"/></svg>
+  </span></div>
+  <main class="screen" id="screen" tabindex="-1"></main>
+  <nav class="tabbar" id="tabbar" aria-label="Main"></nav>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</div>
+</div>
+<script>
+{
+/* ---------- icons ---------- */
+const I={
+ today:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2" stroke-linecap="round"/></svg>',
+ cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4" stroke-linecap="round"/></svg>',
+ req:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="18" r="2"/><circle cx="18.5" cy="6" r="2"/><path d="M7.5 18h6.5a3.5 3.5 0 0 0 0-7h-4a3.5 3.5 0 0 1 0-7h6.5"/></svg>',
+ grade:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M5 20V13M10 20V8M15 20v-9M20 20V4"/></svg>',
+ pass:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9"><rect x="3.5" y="4" width="17" height="16" rx="2.5"/><path d="M7 15.5h10M7 12h5" stroke-linecap="round"/></svg>',
+ chev:'<svg class="chev" viewBox="0 0 8 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 1.5 6.5 6.5 1.5 11.5"/></svg>',
+ back:'<svg width="11" height="19" viewBox="0 0 12 20" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 2 2 10l8 8"/></svg>',
+ check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5 10 17.5 19 7"/></svg>'
+};
+/* ---------- data (sample) ---------- */
+const C={
+ MIS445:{code:'MIS 445',name:'Mobile Computing',col:'var(--mis445)',hex:'#E4572E',room:'B-204',bld:'Building B',lect:'Dr Hasan'},
+ MIS420:{code:'MIS 420',name:'Systems Analysis and Design',col:'var(--mis420)',hex:'#17866F',room:'Lab 3',bld:'Building B',lect:'Dr Noor'},
+ MIS430:{code:'MIS 430',name:'Information Security',col:'var(--mis430)',hex:'#3D52A0',room:'A-112',bld:'Building A',lect:'Dr Faisal'},
+ MGT301:{code:'MGT 301',name:'Organisational Behaviour',col:'var(--mgt301)',hex:'#C9971A',room:'C-015',bld:'Building C',lect:'Dr Huda'},
+ ENG202:{code:'ENG 202',name:'Business Communication',col:'var(--eng202)',hex:'#8E3B8A',room:'A-207',bld:'Building A',lect:'Ms Leila'}
+};
+const TT={0:[['MIS445','10:00','11:15'],['MGT301','13:30','14:45']],1:[['MIS420','09:00','10:50'],['ENG202','12:00','13:15']],2:[['MIS445','10:00','11:15'],['MGT301','13:30','14:45']],3:[['MIS430','11:00','12:15'],['ENG202','12:30','13:45']],4:[['MIS420','09:00','10:50'],['MIS430','11:00','12:15']]};
+const DL=[{c:'MIS420',t:'Lab 6: use case model',due:'2026-11-25T23:59'},{c:'MIS445',t:'Individual Assignment 2',due:'2026-11-28T20:21'},{c:'MIS430',t:'Quiz 3, online',due:'2026-11-30T12:00'},{c:'MIS445',t:'Group project report and slides',due:'2026-12-03T23:59'}];
+const TYPES={
+ letter:{name:'Enrollment letter',col:'#0B5D66',fee:0,days:1,desc:'Confirms you are registered this semester. Banks and embassies usually ask for it.',purposes:['Bank account','Visa or residency','Employer','Scholarship']},
+ transcript:{name:'Official transcript',col:'#3D52A0',fee:5,days:3,desc:'Sealed, stamped record of every completed course.',purposes:['Internship application','Further study','Employer']},
+ adddrop:{name:'Add or drop a course',col:'#8E3B8A',fee:0,days:2,desc:'Open until the end of week 12.',purposes:['Add MIS 455','Drop ENG 202','Swap sections']},
+ idcard:{name:'Replacement ID card',col:'#C9971A',fee:3,days:2,desc:'For a lost or damaged card. Your old card stops working.',purposes:['Lost card','Damaged card']}
+};
+const STAGES=['Submitted','In review','Ready'];
+const MARKS=[{c:'MIS445',items:[['Midterm',24,30],['Assignment 1',4.5,5]]},{c:'MIS420',items:[['Midterm',22,30],['Labs 1 to 5',9,10]]},{c:'MIS430',items:[['Midterm',26,30],['Quizzes 1 and 2',8,10]]},{c:'MGT301',items:[['Midterm',21,30],['Case study',8,10]]},{c:'ENG202',items:[['Midterm',25,30],['Presentation',9,10]]}];
+const HIST=[{term:'Sem 2, 2025-26',short:'S2 25',gpa:3.30,list:[['MIS 410','Database Systems','B+'],['MIS 350','E-Business','A-'],['ACC 201','Managerial Accounting','B'],['STA 210','Business Statistics','B+']]},{term:'Sem 1, 2025-26',short:'S1 25',gpa:3.12,list:[['MIS 310','Programming for Business','B'],['MGT 210','Principles of Management','A-'],['ECO 201','Microeconomics','B'],['ENG 102','Academic Writing','B+']]}];
+const ME={name:'Yousef Hazem Abdulwahed',first:'Yousef',init:'YH',id:'20231110281',prog:'BSc Management Information Systems',year:'Year 3'};
+/* ---------- clock: demo day starts at Sun 22 Nov, 9:41, then runs in real time ---------- */
+const START=new Date('2026-11-22T09:41:00').getTime(), LOADED=Date.now();
+const now=()=>new Date(START+(Date.now()-LOADED));
+/* ---------- state ---------- */
+const store={get(k,d){try{const v=localStorage.getItem('ssp_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem('ssp_'+k,JSON.stringify(v))}catch(e){}}};
+const S0={signed:false,requests:[{id:'RQ-26-04127',type:'letter',purpose:'Bank account',delivery:'Collect',created:'2026-11-16T11:20',stage:2},{id:'RQ-26-04388',type:'transcript',purpose:'Internship application',delivery:'Email',created:'2026-11-20T15:05',stage:1,notes:'Please include Semester 1 grades.'}],booking:null,prefs:{deadlines:true,requests:true,news:false},day:null};
+const st={};for(const k in S0)st[k]=store.get(k,S0[k]);
+const save=()=>{for(const k in S0)store.set(k,st[k])};
+window._st=st;
+/* ---------- helpers ---------- */
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const WD=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],WDL=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],MON=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const D=s=>new Date(s);
+const fDate=d=>`${WD[d.getDay()]} ${d.getDate()} ${MON[d.getMonth()]}`;
+const fTime=d=>{let h=d.getHours(),m=String(d.getMinutes()).padStart(2,'0');const ap=h>=12?'pm':'am';h=h%12||12;return m==='00'?`${h} ${ap}`:`${h}:${m} ${ap}`};
+const hm=s=>{const [h,m]=s.split(':');return +h*60+ +m};
+const mins=d=>d.getHours()*60+d.getMinutes();
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}T${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+function hijri(d){try{return new Intl.DateTimeFormat('ar-BH-u-ca-islamic-umalqura',{day:'numeric',month:'long',year:'numeric'}).format(d)}catch(e){return ''}}
+function untilText(min){if(min<=0)return 'Now';if(min<60)return `In ${min} min`;const h=Math.floor(min/60),m=min%60;return m?`In ${h} h ${m} min`:`In ${h} h`}
+function daysLeft(d){return Math.round((new Date(d.toDateString())-new Date(now().toDateString()))/864e5)}
+function leftText(d){const n=daysLeft(d);if(n<0)return 'Overdue';if(n===0)return 'Today';if(n===1)return 'Tomorrow';return `${n} days`}
+function toast(msg){const t=$('#toast');t.innerHTML=I.check+'<span>'+esc(msg)+'</span>';t.classList.add('show');clearTimeout(toast.h);toast.h=setTimeout(()=>t.classList.remove('show'),2600)}
+const go=h=>{location.hash=h};
+const bar=(title,back,backLabel,end)=>`<div class="bar">${back?`<button class="back" onclick="go('${back}')">${I.back}<span>${esc(backLabel)}</span></button>`:''}<div class="mid">${esc(title||'')}</div>${end||''}</div>`;
+const nextId=()=>{const n=Math.max(4400,...st.requests.map(r=>+r.id.slice(-5)||0))+1;return 'RQ-26-'+String(n).padStart(5,'0')};
+function path(stage){return `<div class="path">${STAGES.map((s,i)=>`<i class="${i<stage||stage===2?'on':i===stage?'cur':''}"></i>${i<2?`<span class="${i<stage?'on':''}"></span>`:''}`).join('')}</div>`}
+function stText(r){return r.stage>=2?'<span class="st" style="color:var(--ok)">Ready</span>':r.stage===1?'<span class="st" style="color:var(--wait)">In review</span>':'<span class="st" style="color:var(--act)">Submitted</span>'}
+/* ---------- screens ---------- */
+const V={};
+V.welcome=()=>{const ar=W.lang==='ar';const T=ar?{h:'محاضراتك ومواعيدك ومعاملاتك الجامعية في مكان واحد.',sub:'Your classes, deadlines and paperwork, in one place.',p:'اعرف أين محاضرتك القادمة، وتابع مواعيد التسليم، واطلب الرسائل دون الانتظار في مكتب التسجيل.',sso:'الدخول بحساب الجامعة',demo:'جرّب النسخة التجريبية',qh:'أفضل على هاتفك',qp:'امسح الرمز لفتح خدمات الطلبة على هاتفك وإضافته إلى الشاشة الرئيسية.',sm:'نموذج أولي لمشروع MIS 445 من إعداد يوسف حازم عبدالواحد والعنود أحمد الكعبي وعبدالعزيز الجزاف. جميع البيانات تجريبية.'}:{h:'Your classes, deadlines and paperwork, in one place.',sub:'محاضراتك ومواعيدك ومعاملاتك في مكان واحد',p:'Check where your next class is, see what is due, and request letters without queuing at the Registration Office.',sso:'Sign in with ASU account',demo:'Try the demo',qh:'Better on your phone',qp:'Scan to open Student Services on your phone and add it to your home screen.',sm:'MIS 445 group project prototype by Yousef Hazem Abdulwahed, Alanood Ahmed Alkaabi and Abdulaziz Aljazzaf. All data is sample data.'};
+return `<div class="welcome">
+ <div class="stack" aria-hidden="true">
+  <div class="tkt" style="background:#E4572E"><b>MIS 445</b><span>B-204<br>10:00 am</span></div>
+  <div class="tkt" style="background:#17866F;margin-left:18px"><b>RQ-26-04388</b><span>Transcript<br>In review</span></div>
+  <div class="tkt" style="background:#3D52A0;margin-left:36px"><b>Thu 26</b><span>Advisor<br>11:00 am</span></div>
+ </div>
+ <div class="wtext" dir="${ar?'rtl':'ltr'}" lang="${ar?'ar':'en'}">
+ <div class="lang" role="group" aria-label="Language"><button aria-pressed="${!ar}" onclick="setLang('en')" lang="en">English</button><button aria-pressed="${ar}" onclick="setLang('ar')" lang="ar" style="font-family:Tajawal,sans-serif">العربية</button></div>
+ <h1>${T.h}</h1>
+ <span class="arline" lang="${ar?'en':'ar'}" dir="${ar?'ltr':'rtl'}" style="text-align:${ar?'right':'left'};${ar?'font-family:Barlow,sans-serif':''}">${T.sub}</span>
+ <p>${T.p}</p>
+ <div class="btns"><button class="sso" onclick="signIn()">${T.sso}</button><button class="demo" onclick="signIn()">${T.demo}</button></div>
+ <div class="phoneqr"><div class="qr"><svg viewBox="0 0 33 33" shape-rendering="crispEdges" role="img" aria-label="QR code that opens Student Services"><path fill="#123B3F" d="M0,0h1v1h-1zM1,0h1v1h-1zM2,0h1v1h-1zM3,0h1v1h-1zM4,0h1v1h-1zM5,0h1v1h-1zM6,0h1v1h-1zM8,0h1v1h-1zM12,0h1v1h-1zM13,0h1v1h-1zM16,0h1v1h-1zM17,0h1v1h-1zM18,0h1v1h-1zM19,0h1v1h-1zM20,0h1v1h-1zM21,0h1v1h-1zM23,0h1v1h-1zM26,0h1v1h-1zM27,0h1v1h-1zM28,0h1v1h-1zM29,0h1v1h-1zM30,0h1v1h-1zM31,0h1v1h-1zM32,0h1v1h-1zM0,1h1v1h-1zM6,1h1v1h-1zM8,1h1v1h-1zM12,1h1v1h-1zM13,1h1v1h-1zM16,1h1v1h-1zM18,1h1v1h-1zM20,1h1v1h-1zM21,1h1v1h-1zM23,1h1v1h-1zM24,1h1v1h-1zM26,1h1v1h-1zM32,1h1v1h-1zM0,2h1v1h-1zM2,2h1v1h-1zM3,2h1v1h-1zM4,2h1v1h-1zM6,2h1v1h-1zM9,2h1v1h-1zM10,2h1v1h-1zM11,2h1v1h-1zM16,2h1v1h-1zM17,2h1v1h-1zM20,2h1v1h-1zM24,2h1v1h-1zM26,2h1v1h-1zM28,2h1v1h-1zM29,2h1v1h-1zM30,2h1v1h-1zM32,2h1v1h-1zM0,3h1v1h-1zM2,3h1v1h-1zM3,3h1v1h-1zM4,3h1v1h-1zM6,3h1v1h-1zM8,3h1v1h-1zM12,3h1v1h-1zM14,3h1v1h-1zM16,3h1v1h-1zM19,3h1v1h-1zM20,3h1v1h-1zM22,3h1v1h-1zM24,3h1v1h-1zM26,3h1v1h-1zM28,3h1v1h-1zM29,3h1v1h-1zM30,3h1v1h-1zM32,3h1v1h-1zM0,4h1v1h-1zM2,4h1v1h-1zM3,4h1v1h-1zM4,4h1v1h-1zM6,4h1v1h-1zM9,4h1v1h-1zM10,4h1v1h-1zM12,4h1v1h-1zM13,4h1v1h-1zM14,4h1v1h-1zM17,4h1v1h-1zM20,4h1v1h-1zM24,4h1v1h-1zM26,4h1v1h-1zM28,4h1v1h-1zM29,4h1v1h-1zM30,4h1v1h-1zM32,4h1v1h-1zM0,5h1v1h-1zM6,5h1v1h-1zM11,5h1v1h-1zM14,5h1v1h-1zM17,5h1v1h-1zM18,5h1v1h-1zM19,5h1v1h-1zM20,5h1v1h-1zM21,5h1v1h-1zM24,5h1v1h-1zM26,5h1v1h-1zM32,5h1v1h-1zM0,6h1v1h-1zM1,6h1v1h-1zM2,6h1v1h-1zM3,6h1v1h-1zM4,6h1v1h-1zM5,6h1v1h-1zM6,6h1v1h-1zM8,6h1v1h-1zM10,6h1v1h-1zM12,6h1v1h-1zM14,6h1v1h-1zM16,6h1v1h-1zM18,6h1v1h-1zM20,6h1v1h-1zM22,6h1v1h-1zM24,6h1v1h-1zM26,6h1v1h-1zM27,6h1v1h-1zM28,6h1v1h-1zM29,6h1v1h-1zM30,6h1v1h-1zM31,6h1v1h-1zM32,6h1v1h-1zM8,7h1v1h-1zM9,7h1v1h-1zM10,7h1v1h-1zM12,7h1v1h-1zM17,7h1v1h-1zM18,7h1v1h-1zM20,7h1v1h-1zM23,7h1v1h-1zM0,8h1v1h-1zM2,8h1v1h-1zM3,8h1v1h-1zM5,8h1v1h-1zM6,8h1v1h-1zM7,8h1v1h-1zM11,8h1v1h-1zM16,8h1v1h-1zM17,8h1v1h-1zM18,8h1v1h-1zM19,8h1v1h-1zM21,8h1v1h-1zM23,8h1v1h-1zM26,8h1v1h-1zM29,8h1v1h-1zM31,8h1v1h-1zM32,8h1v1h-1zM0,9h1v1h-1zM4,9h1v1h-1zM5,9h1v1h-1zM9,9h1v1h-1zM10,9h1v1h-1zM11,9h1v1h-1zM12,9h1v1h-1zM16,9h1v1h-1zM18,9h1v1h-1zM19,9h1v1h-1zM21,9h1v1h-1zM22,9h1v1h-1zM23,9h1v1h-1zM26,9h1v1h-1zM27,9h1v1h-1zM29,9h1v1h-1zM30,9h1v1h-1zM31,9h1v1h-1zM32,9h1v1h-1zM0,10h1v1h-1zM2,10h1v1h-1zM3,10h1v1h-1zM4,10h1v1h-1zM6,10h1v1h-1zM10,10h1v1h-1zM11,10h1v1h-1zM12,10h1v1h-1zM14,10h1v1h-1zM17,10h1v1h-1zM22,10h1v1h-1zM23,10h1v1h-1zM24,10h1v1h-1zM25,10h1v1h-1zM27,10h1v1h-1zM28,10h1v1h-1zM29,10h1v1h-1zM31,10h1v1h-1zM32,10h1v1h-1zM1,11h1v1h-1zM2,11h1v1h-1zM10,11h1v1h-1zM12,11h1v1h-1zM13,11h1v1h-1zM14,11h1v1h-1zM15,11h1v1h-1zM18,11h1v1h-1zM19,11h1v1h-1zM20,11h1v1h-1zM23,11h1v1h-1zM27,11h1v1h-1zM29,11h1v1h-1zM31,11h1v1h-1zM2,12h1v1h-1zM3,12h1v1h-1zM6,12h1v1h-1zM9,12h1v1h-1zM10,12h1v1h-1zM11,12h1v1h-1zM18,12h1v1h-1zM19,12h1v1h-1zM22,12h1v1h-1zM24,12h1v1h-1zM25,12h1v1h-1zM27,12h1v1h-1zM28,12h1v1h-1zM29,12h1v1h-1zM31,12h1v1h-1zM1,13h1v1h-1zM3,13h1v1h-1zM4,13h1v1h-1zM5,13h1v1h-1zM11,13h1v1h-1zM12,13h1v1h-1zM16,13h1v1h-1zM18,13h1v1h-1zM21,13h1v1h-1zM22,13h1v1h-1zM24,13h1v1h-1zM25,13h1v1h-1zM31,13h1v1h-1zM0,14h1v1h-1zM3,14h1v1h-1zM6,14h1v1h-1zM7,14h1v1h-1zM8,14h1v1h-1zM9,14h1v1h-1zM10,14h1v1h-1zM13,14h1v1h-1zM15,14h1v1h-1zM16,14h1v1h-1zM22,14h1v1h-1zM26,14h1v1h-1zM28,14h1v1h-1zM29,14h1v1h-1zM3,15h1v1h-1zM8,15h1v1h-1zM9,15h1v1h-1zM14,15h1v1h-1zM16,15h1v1h-1zM19,15h1v1h-1zM20,15h1v1h-1zM21,15h1v1h-1zM23,15h1v1h-1zM25,15h1v1h-1zM26,15h1v1h-1zM29,15h1v1h-1zM30,15h1v1h-1zM0,16h1v1h-1zM3,16h1v1h-1zM4,16h1v1h-1zM5,16h1v1h-1zM6,16h1v1h-1zM8,16h1v1h-1zM10,16h1v1h-1zM11,16h1v1h-1zM13,16h1v1h-1zM15,16h1v1h-1zM18,16h1v1h-1zM19,16h1v1h-1zM20,16h1v1h-1zM21,16h1v1h-1zM22,16h1v1h-1zM23,16h1v1h-1zM24,16h1v1h-1zM25,16h1v1h-1zM26,16h1v1h-1zM28,16h1v1h-1zM29,16h1v1h-1zM30,16h1v1h-1zM1,17h1v1h-1zM5,17h1v1h-1zM7,17h1v1h-1zM8,17h1v1h-1zM10,17h1v1h-1zM13,17h1v1h-1zM14,17h1v1h-1zM15,17h1v1h-1zM16,17h1v1h-1zM17,17h1v1h-1zM18,17h1v1h-1zM20,17h1v1h-1zM22,17h1v1h-1zM23,17h1v1h-1zM24,17h1v1h-1zM26,17h1v1h-1zM28,17h1v1h-1zM29,17h1v1h-1zM32,17h1v1h-1zM2,18h1v1h-1zM3,18h1v1h-1zM4,18h1v1h-1zM6,18h1v1h-1zM9,18h1v1h-1zM12,18h1v1h-1zM13,18h1v1h-1zM14,18h1v1h-1zM15,18h1v1h-1zM17,18h1v1h-1zM20,18h1v1h-1zM27,18h1v1h-1zM28,18h1v1h-1zM30,18h1v1h-1zM31,18h1v1h-1zM1,19h1v1h-1zM2,19h1v1h-1zM3,19h1v1h-1zM4,19h1v1h-1zM7,19h1v1h-1zM9,19h1v1h-1zM12,19h1v1h-1zM13,19h1v1h-1zM14,19h1v1h-1zM15,19h1v1h-1zM22,19h1v1h-1zM23,19h1v1h-1zM24,19h1v1h-1zM25,19h1v1h-1zM28,19h1v1h-1zM31,19h1v1h-1zM0,20h1v1h-1zM2,20h1v1h-1zM3,20h1v1h-1zM4,20h1v1h-1zM6,20h1v1h-1zM8,20h1v1h-1zM13,20h1v1h-1zM14,20h1v1h-1zM18,20h1v1h-1zM19,20h1v1h-1zM20,20h1v1h-1zM21,20h1v1h-1zM22,20h1v1h-1zM24,20h1v1h-1zM27,20h1v1h-1zM29,20h1v1h-1zM30,20h1v1h-1zM31,20h1v1h-1zM0,21h1v1h-1zM2,21h1v1h-1zM4,21h1v1h-1zM10,21h1v1h-1zM11,21h1v1h-1zM12,21h1v1h-1zM15,21h1v1h-1zM18,21h1v1h-1zM23,21h1v1h-1zM26,21h1v1h-1zM29,21h1v1h-1zM30,21h1v1h-1zM32,21h1v1h-1zM2,22h1v1h-1zM3,22h1v1h-1zM6,22h1v1h-1zM8,22h1v1h-1zM9,22h1v1h-1zM12,22h1v1h-1zM16,22h1v1h-1zM17,22h1v1h-1zM18,22h1v1h-1zM23,22h1v1h-1zM28,22h1v1h-1zM29,22h1v1h-1zM31,22h1v1h-1zM32,22h1v1h-1zM1,23h1v1h-1zM4,23h1v1h-1zM9,23h1v1h-1zM10,23h1v1h-1zM11,23h1v1h-1zM12,23h1v1h-1zM14,23h1v1h-1zM16,23h1v1h-1zM19,23h1v1h-1zM22,23h1v1h-1zM23,23h1v1h-1zM27,23h1v1h-1zM29,23h1v1h-1zM31,23h1v1h-1zM0,24h1v1h-1zM2,24h1v1h-1zM4,24h1v1h-1zM5,24h1v1h-1zM6,24h1v1h-1zM9,24h1v1h-1zM11,24h1v1h-1zM14,24h1v1h-1zM15,24h1v1h-1zM17,24h1v1h-1zM22,24h1v1h-1zM24,24h1v1h-1zM25,24h1v1h-1zM26,24h1v1h-1zM27,24h1v1h-1zM28,24h1v1h-1zM8,25h1v1h-1zM10,25h1v1h-1zM12,25h1v1h-1zM15,25h1v1h-1zM16,25h1v1h-1zM17,25h1v1h-1zM19,25h1v1h-1zM21,25h1v1h-1zM24,25h1v1h-1zM28,25h1v1h-1zM29,25h1v1h-1zM31,25h1v1h-1zM0,26h1v1h-1zM1,26h1v1h-1zM2,26h1v1h-1zM3,26h1v1h-1zM4,26h1v1h-1zM5,26h1v1h-1zM6,26h1v1h-1zM8,26h1v1h-1zM10,26h1v1h-1zM11,26h1v1h-1zM14,26h1v1h-1zM19,26h1v1h-1zM21,26h1v1h-1zM23,26h1v1h-1zM24,26h1v1h-1zM26,26h1v1h-1zM28,26h1v1h-1zM0,27h1v1h-1zM6,27h1v1h-1zM8,27h1v1h-1zM9,27h1v1h-1zM11,27h1v1h-1zM12,27h1v1h-1zM15,27h1v1h-1zM16,27h1v1h-1zM19,27h1v1h-1zM21,27h1v1h-1zM22,27h1v1h-1zM23,27h1v1h-1zM24,27h1v1h-1zM28,27h1v1h-1zM29,27h1v1h-1zM30,27h1v1h-1zM31,27h1v1h-1zM32,27h1v1h-1zM0,28h1v1h-1zM2,28h1v1h-1zM3,28h1v1h-1zM4,28h1v1h-1zM6,28h1v1h-1zM10,28h1v1h-1zM14,28h1v1h-1zM17,28h1v1h-1zM19,28h1v1h-1zM20,28h1v1h-1zM23,28h1v1h-1zM24,28h1v1h-1zM25,28h1v1h-1zM26,28h1v1h-1zM27,28h1v1h-1zM28,28h1v1h-1zM30,28h1v1h-1zM31,28h1v1h-1zM0,29h1v1h-1zM2,29h1v1h-1zM3,29h1v1h-1zM4,29h1v1h-1zM6,29h1v1h-1zM8,29h1v1h-1zM10,29h1v1h-1zM14,29h1v1h-1zM17,29h1v1h-1zM18,29h1v1h-1zM19,29h1v1h-1zM20,29h1v1h-1zM22,29h1v1h-1zM23,29h1v1h-1zM24,29h1v1h-1zM27,29h1v1h-1zM29,29h1v1h-1zM32,29h1v1h-1zM0,30h1v1h-1zM2,30h1v1h-1zM3,30h1v1h-1zM4,30h1v1h-1zM6,30h1v1h-1zM8,30h1v1h-1zM9,30h1v1h-1zM10,30h1v1h-1zM13,30h1v1h-1zM18,30h1v1h-1zM19,30h1v1h-1zM21,30h1v1h-1zM23,30h1v1h-1zM26,30h1v1h-1zM27,30h1v1h-1zM29,30h1v1h-1zM30,30h1v1h-1zM0,31h1v1h-1zM6,31h1v1h-1zM10,31h1v1h-1zM12,31h1v1h-1zM13,31h1v1h-1zM14,31h1v1h-1zM15,31h1v1h-1zM16,31h1v1h-1zM17,31h1v1h-1zM19,31h1v1h-1zM22,31h1v1h-1zM24,31h1v1h-1zM25,31h1v1h-1zM26,31h1v1h-1zM27,31h1v1h-1zM28,31h1v1h-1zM32,31h1v1h-1zM0,32h1v1h-1zM1,32h1v1h-1zM2,32h1v1h-1zM3,32h1v1h-1zM4,32h1v1h-1zM5,32h1v1h-1zM6,32h1v1h-1zM8,32h1v1h-1zM9,32h1v1h-1zM10,32h1v1h-1zM11,32h1v1h-1zM14,32h1v1h-1zM15,32h1v1h-1zM17,32h1v1h-1zM18,32h1v1h-1zM20,32h1v1h-1zM21,32h1v1h-1zM23,32h1v1h-1zM28,32h1v1h-1zM30,32h1v1h-1z"/></svg></div><div><b>${T.qh}</b><p>${T.qp}</p></div></div>
+ <small>${T.sm}</small></div></div>`};
+const W={lang:'en'};function setLang(l){W.lang=l;render()}
+V.home=()=>{
+ const n=now(),dow=n.getDay(),today=TT[dow]||[],m=mins(n);
+ let nxt=today.find(s=>hm(s[2])>m),dayLbl='Today';
+ if(!nxt){for(let i=1;i<7;i++){const d=(dow+i)%7;if(TT[d]){nxt=TT[d][0];dayLbl=WDL[d];break}}}
+ const c=C[nxt[0]],until=dayLbl==='Today'?hm(nxt[1])-m:null;
+ const live=until!==null&&until<=0;
+ const open=st.requests.filter(r=>r.stage<2);
+ const dls=[...DL].sort((a,b)=>D(a.due)-D(b.due)).filter(x=>daysLeft(D(x.due))>=0).slice(0,3);
+ const startH=8,endH=16,span=(endH-startH)*60;
+ return `<div class="top"><div><div class="date">${WDL[dow]} ${n.getDate()} ${MON[n.getMonth()]} <span class="ar" lang="ar" dir="rtl">${hijri(n)}</span></div><h1>Morning, ${esc(ME.first)}</h1></div><a class="avatar" href="#pass" aria-label="Your student ID">${ME.init}</a></div>
+ <a class="board" href="#schedule" style="background:${c.col}" id="board">
+  <div class="lead"><span>${live?'Happening now':'Next class'} ${dayLbl==='Today'?'':', '+dayLbl}</span><span class="count" id="countdown">${until!==null?untilText(until):''}</span></div>
+  <div class="code">${c.code}</div><div class="name">${esc(c.name)}</div>
+  <div class="fields"><div><small>Room</small><b>${c.room}</b></div><div><small>Time</small><b>${nxt[1]} to ${nxt[2]}</b></div><div><small>Lecturer</small><b>${esc(c.lect)}</b></div></div>
+ </a>
+ <div class="ribbon" aria-label="Today's classes">
+  <div class="track"></div>
+  ${today.map(s=>{const l=(hm(s[1])-startH*60)/span*100,w=(hm(s[2])-hm(s[1]))/span*100;return `<div class="blk" style="left:${l}%;width:${w}%;background:${C[s[0]].col}">${C[s[0]].code}</div>`}).join('')}
+  ${m>=startH*60&&m<=endH*60?`<div class="nowl" id="nowl" style="left:${(m-startH*60)/span*100}%"></div>`:''}
+  <div class="ticks"><span>8 am</span><span>10</span><span>12 pm</span><span>2</span><span>4 pm</span></div>
+ </div>
+ <div class="cols"><section><div class="h2">Due soon <button onclick="go('deadlines')">All ${DL.length}</button></div>
+ <div class="list">${dls.map(x=>{const d=D(x.due),k=C[x.c],n2=daysLeft(d);return `<div class="li"><div class="datebox ${n2<=3?'soon':''}"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b></div><div class="grow"><div class="t">${esc(x.t)}</div><div class="d"><span class="cc" style="background:${k.col}"></span>${k.code}, due ${fTime(d)}</div></div><span class="left ${n2<=3?'hot':''}">${leftText(d)}</span></div>`}).join('')}</div>
+</section><section> ${st.booking?`<div class="h2">Advisor</div><div class="list"><a class="li" href="#book"><div class="datebox"><small>${WD[D(st.booking.date).getDay()]}</small><b>${D(st.booking.date).getDate()}</b></div><div class="grow"><div class="t">Academic advising</div><div class="d">${st.booking.time}, ${esc(st.booking.mode.toLowerCase())}</div></div>${I.chev}</a></div>`:`<div class="h2">Advisor</div><div class="list"><a class="li" href="#book" id="bookadv"><div class="datebox"><small>Free</small><b>${I.today.replace('<svg','<svg style="width:22px;height:22px;margin-top:2px"')}</b></div><div class="grow"><div class="t">Book a meeting with your advisor</div><div class="d">Next free slot tomorrow at 9:00 am</div></div>${I.chev}</a></div>`}
+ <div class="h2">Requests <button onclick="go('requests')">${open.length} open</button></div>
+ <div class="list">${st.requests.slice(0,2).map(trk).join('')}</div></section></div>`};
+function trk(r){const t=TYPES[r.type];return `<a class="trk" href="#req/${r.id}"><div class="row1"><span class="t">${t.name}</span>${stText(r)}</div><div class="meta">${r.id}, sent ${fDate(D(r.created))}</div>${path(r.stage)}</a>`}
+V.deadlines=()=>`<div class="narrow">${bar('','home','Today')}<div class="top"><h1>Deadlines</h1></div>
+ <div class="list">${[...DL].sort((a,b)=>D(a.due)-D(b.due)).map(x=>{const d=D(x.due),k=C[x.c];return `<div class="li"><div class="datebox"><small>${WD[d.getDay()]}</small><b>${d.getDate()}</b></div><div class="grow"><div class="t">${esc(x.t)}</div><div class="d"><span class="cc" style="background:${k.col}"></span>${k.code} ${esc(k.name)}, ${fTime(d)}</div></div><span class="left">${leftText(d)}</span></div>`}).join('')}</div>
+ <p class="note">Pulled from your course pages on eLearning. Times are Bahrain time.</p></div>`;
+const desk=()=>matchMedia('(min-width:1000px)').matches;
+function weekView(){const n=now(),base=new Date(n);base.setDate(n.getDate()-n.getDay());const startH=8,px=60,hrs=9,m=mins(n);
+ return `<div class="top"><div><div class="date">${MON[n.getMonth()]} ${n.getFullYear()}, week 11 of 15</div><h1>Timetable</h1></div></div>
+ <div class="weekgrid"><div class="wg-h"></div>${[0,1,2,3,4].map(i=>{const d=new Date(base);d.setDate(base.getDate()+i);return `<div class="wg-h ${i===n.getDay()?'today':''}">${WDL[i]}<b>${d.getDate()}</b></div>`}).join('')}
+ <div class="wg-t" style="height:${hrs*px}px">${Array.from({length:hrs},(_,i)=>`<span style="top:${i*px}px">${fTime(new Date(2026,0,1,startH+i))}</span>`).join('')}</div>
+ ${[0,1,2,3,4].map(i=>`<div class="wg-col ${i===n.getDay()?'today':''}" style="height:${hrs*px}px">${Array.from({length:hrs},(_,h)=>`<div class="wg-line" style="top:${h*px}px"></div>`).join('')}${(TT[i]||[]).map(s=>{const k=C[s[0]],top=(hm(s[1])-startH*60)/60*px,h=(hm(s[2])-hm(s[1]))/60*px;return `<div class="ev" style="top:${top+1}px;height:${h-2}px;border-color:${k.col};background:color-mix(in srgb, ${k.hex} 12%, white)"><span class="tm">${s[1]} to ${s[2]}</span><b>${k.code}</b><small>${esc(k.name)}<br>${k.bld}, room ${k.room}</small></div>`}).join('')}${i===n.getDay()&&m>=startH*60&&m<=(startH+hrs)*60?`<div class="nowline" style="left:0;top:${(m-startH*60)/60*px}px"></div>`:''}</div>`).join('')}</div>
+ <p class="note">Fridays and Saturdays are off. Exams start on Sunday 13 December.</p>`}
+V.schedule=()=>{if(desk())return weekView();
+ const n=now(),base=new Date(n);base.setDate(n.getDate()-n.getDay());
+ const sel=st.day??n.getDay(),list=TT[sel]||[],startH=8,px=64;
+ const days=[0,1,2,3,4].map(i=>{const d=new Date(base);d.setDate(base.getDate()+i);return {i,d}});
+ const isToday=sel===n.getDay(),m=mins(n);
+ return `<div class="top"><div><div class="date">${MON[n.getMonth()]} ${n.getFullYear()}, week 11 of 15</div><h1>Timetable</h1></div></div>
+ <div class="week" role="group" aria-label="Day">${days.map(x=>`<button class="${x.i===n.getDay()?'today':''}" aria-pressed="${x.i===sel}" onclick="pickDay(${x.i})"><span class="wd">${WD[x.i]}</span><span class="dn">${x.d.getDate()}</span></button>`).join('')}</div>
+ <div class="day">${Array.from({length:9},(_,i)=>`<div class="hr" style="top:${i*px}px"><span>${fTime(new Date(2026,0,1,startH+i))}</span></div>`).join('')}
+ ${list.map(s=>{const k=C[s[0]],top=(hm(s[1])-startH*60)/60*px,h=(hm(s[2])-hm(s[1]))/60*px;return `<div class="ev" style="top:${top+1}px;height:${h-2}px;border-color:${k.col};background:color-mix(in srgb, ${k.hex} 12%, white)"><span class="tm">${s[1]} to ${s[2]}</span><b>${k.code} ${esc(k.name)}</b><small>${k.bld}, room ${k.room}</small></div>`}).join('')}
+ ${isToday&&m>=startH*60&&m<=(startH+9)*60?`<div class="nowline" style="top:${(m-startH*60)/60*px}px"></div>`:''}
+ ${list.length?'':'<div class="free">No classes. Fridays and Saturdays are off.</div>'}</div>`};
+V.requests=()=>{const open=st.requests.filter(r=>r.stage<2),done=st.requests.filter(r=>r.stage>=2);
+ return `<div class="top"><h1>Requests</h1><button class="avatar" style="background:var(--act);color:#fff;border-color:var(--act);font-size:26px;font-weight:500" onclick="go('newreq')" aria-label="New request">+</button></div>
+ <div class="cols"><section><div class="h3" id="h-open">Open</div><div class="list" id="open">${open.map(trk).join('')||'<p class="note" style="padding:14px 0">Nothing open. Tap + to ask for a letter, transcript or course change.</p>'}</div>
+</section><section><div class="h3" id="h-done">Completed</div><div class="list" id="done">${done.map(trk).join('')||'<p class="note" style="padding:14px 0">Finished requests stay here for a year.</p>'}</div></section></div>
+ <button class="btn" onclick="go('newreq')">New request</button>`};
+V.newreq=(type)=>`<div class="narrow">`+newreq(type)+`</div>`;
+function newreq(type){
+ if(!type)return `${bar('','requests','Requests')}<div class="top"><h1>What do you need?</h1></div>
+ <div class="opts">${Object.entries(TYPES).map(([k,t])=>`<a class="opt" href="#newreq/${k}"><span class="sq" style="background:${t.col}"></span><div><div class="t">${t.name}</div><div class="d">${t.desc}</div></div><span class="fee">${t.fee?'BD '+t.fee:'Free'}</span></a>`).join('')}
+ <a class="opt" href="#book"><span class="sq" style="background:var(--ink)"></span><div><div class="t">Advisor meeting</div><div class="d">20 minutes, on campus or online.</div></div><span class="fee">${I.chev}</span></a></div>`;
+ const t=TYPES[type];window._f={p:t.purposes[0],dl:'Email',lang:'English'};
+ return `${bar(t.name,'newreq','Back')}<div class="top deskonly"><h1>${t.name}</h1></div>
+ <span class="lab">What is it for?</span><div class="chips" data-k="p">${t.purposes.map((p,i)=>`<button aria-pressed="${i===0}" onclick="pick(this)" data-v="${esc(p)}">${esc(p)}</button>`).join('')}</div>
+ ${type==='letter'||type==='transcript'?`<span class="lab">How do you want it?</span><div class="chips" data-k="dl"><button aria-pressed="true" onclick="pick(this)" data-v="Email">PDF to my student email</button><button aria-pressed="false" onclick="pick(this)" data-v="Collect">Collect from Building A</button></div>
+ <span class="lab">Language</span><div class="chips" data-k="lang"><button aria-pressed="true" onclick="pick(this)" data-v="English">English</button><button aria-pressed="false" onclick="pick(this)" data-v="Arabic" class="ar">العربية</button></div>`:''}
+ <span class="lab">Anything the office should know?</span><textarea id="n" placeholder="Optional, for example the name of the bank"></textarea>
+ <div class="sum"><span>${t.fee?'BD '+t.fee.toFixed(3)+' added to your account':'No fee'}</span><span>Ready in about <b>${t.days}</b> working day${t.days>1?'s':''}</span></div>
+ <button class="btn" onclick="submitReq('${type}')">Send request</button>`}
+V.req=(id)=>`<div class="narrow">`+req(id)+`</div>`;
+function req(id){const r=st.requests.find(x=>x.id===id);if(!r)return V.requests();const t=TYPES[r.type],c=D(r.created);
+ const eta=new Date(c);let k=t.days;while(k>0){eta.setDate(eta.getDate()+1);if(eta.getDay()<5)k--}
+ const w=[fDate(c)+', '+fTime(c),r.stage>=1?'Being checked by the Registration Office':'Waiting for the office to pick it up',r.stage>=2?(r.delivery==='Email'?'Sent to your student email':'Waiting for you at Building A, ground floor'):'Expected by '+fDate(eta)];
+ return `${bar('','requests','Requests')}
+ <div class="big"><div class="k">${t.name}</div><div class="s" style="color:${r.stage>=2?'var(--ok)':r.stage===1?'var(--wait)':'var(--act)'}">${STAGES[r.stage]}</div><div class="r ref">${r.id}</div></div>
+ <ol class="journey">${STAGES.map((s,i)=>`<li class="${i<r.stage||r.stage===2?'done':i===r.stage?'now':''}"><span class="n">${i<r.stage||r.stage===2?I.check:''}</span><div><div class="s">${s}</div><div class="w">${esc(w[i])}</div></div></li>`).join('')}</ol>
+ <div class="facts"><div><small>Purpose</small><b>${esc(r.purpose)}</b></div><div><small>Delivery</small><b>${r.delivery==='Email'?'Student email':'Collect'}</b></div><div><small>Fee</small><b>${t.fee?'BD '+t.fee.toFixed(3):'None'}</b></div><div><small>Expected</small><b>${fDate(eta)}</b></div></div>
+ ${r.notes?`<p class="note">Your note: ${esc(r.notes)}</p>`:''}
+ ${r.stage<2?`<button class="btn ghost" onclick="advance('${r.id}')">Refresh status</button><button class="btn red" onclick="cancelReq('${r.id}')">Cancel request</button>`:''}`}
+V.book=()=>`<div class="narrow">`+book()+`</div>`;
+function book(){
+ const slots=['9:00','9:30','10:30','11:00','12:30','1:00'],taken={1:['9:30','12:30'],2:['9:00','10:30','11:00'],3:['1:00']};
+ const days=[];const d=new Date(now());while(days.length<5){d.setDate(d.getDate()+1);if(d.getDay()<5)days.push(new Date(d))}
+ const b=st.booking,sel=window._bk||(window._bk={di:0,time:null,mode:'On campus'});
+ if(b){const bd=D(b.date);return `${bar('','home','Today')}<div class="big"><div class="k">Academic advising</div><div class="s">${WD[bd.getDay()]} ${bd.getDate()} ${MON[bd.getMonth()]}</div><div class="r">${b.time}, ${esc(b.mode.toLowerCase())}</div></div>
+  <div class="facts" style="margin-top:22px"><div><small>Where</small><b>${b.mode==='Online'?'Link sent by email':'Building B, room 118'}</b></div><div><small>Length</small><b>20 minutes</b></div></div>
+  <p class="note">Bring your study plan. If you cannot make it, cancel so another student can take the slot.</p>
+  <button class="btn red" onclick="cancelBooking()">Cancel appointment</button>`}
+ return `${bar('','home','Today')}<div class="top"><div><div class="date">MIS Department, 20 minutes</div><h1>See your advisor</h1></div></div>
+ <div class="week" role="group" aria-label="Day">${days.map((x,i)=>`<button aria-pressed="${i===sel.di}" onclick="_bk.di=${i};_bk.time=null;rr()"><span class="wd">${WD[x.getDay()]}</span><span class="dn">${x.getDate()}</span></button>`).join('')}</div>
+ <span class="lab">Free times</span>
+ <div class="slots">${slots.map(s=>{const off=(taken[sel.di]||[]).includes(s);const ap=(+s.split(':')[0]>=9&&+s.split(':')[0]<12)?'am':'pm';return `<button ${off?'disabled aria-label="'+s+' taken"':''} aria-pressed="${sel.time===s}" onclick="_bk.time='${s}';rr()">${s} ${ap}</button>`}).join('')}</div>
+ <span class="lab">Where</span><div class="chips">${['On campus','Online'].map(m=>`<button aria-pressed="${sel.mode===m}" onclick="_bk.mode='${m}';rr()">${m}</button>`).join('')}</div>
+ <button class="btn" ${sel.time?'':'disabled'} onclick="confirmBooking('${iso(days[sel.di])}')">${sel.time?`Book ${WD[days[sel.di].getDay()]} at ${sel.time} ${(+sel.time.split(':')[0]>=9&&+sel.time.split(':')[0]<12)?'am':'pm'}`:'Pick a time'}</button>`}
+V.grades=()=>{
+ const tot=MARKS.map(g=>({...g,s:g.items.reduce((a,i)=>a+i[1],0),m:g.items.reduce((a,i)=>a+i[2],0)}));
+ const terms=[...HIST].reverse(),mx=4;
+ return `<div class="top"><h1>Grades</h1></div>
+ <div class="gpa"><div><b>3.21</b><small>Cumulative GPA, 84 of 132 credits</small></div>
+ <div class="terms" aria-label="GPA by semester">${terms.map(t=>`<div style="height:${t.gpa/mx*56}px"><span>${t.short}</span></div>`).join('')}<div class="cur" style="height:${3.21/mx*56}px"><span>Now</span></div></div></div>
+ <div class="cols"><section><div class="h2" style="padding-top:34px">This semester so far</div>
+ <div class="list">${tot.map(g=>{const k=C[g.c];return `<a class="li" href="#course/${g.c}"><div class="grow"><div class="t"><span class="cc" style="background:${k.col}"></span>${k.code} ${esc(k.name)}</div><div class="meter"><i style="width:${g.s/g.m*100}%;background:${k.col}"></i></div></div><span class="score">${g.s}<span style="color:var(--ink3)">/${g.m}</span></span>${I.chev}</a>`}).join('')}</div>
+</section><section style="padding-top:20px"> ${HIST.map(h=>`<div class="h3" style="display:flex;justify-content:space-between;padding-right:20px"><span>${h.term}</span><span>GPA ${h.gpa.toFixed(2)}</span></div><div class="list">${h.list.map(x=>`<div class="tr"><span class="c">${x[0]}</span><span>${x[1]}</span><span class="g">${x[2]}</span></div>`).join('')}</div>`).join('')}
+ <p class="note">Final grades appear after the exam period ends on 1 January.</p></section></div>`};
+V.course=(code)=>`<div class="narrow">`+course(code)+`</div>`;
+function course(code){const g=MARKS.find(x=>x.c===code),k=C[code];
+ return `${bar('','grades','Grades')}<div class="board" style="background:${k.col};margin-top:2px"><div class="lead"><span>${k.bld}, room ${k.room}</span><span>${esc(k.lect)}</span></div><div class="code" style="font-size:54px">${k.code}</div><div class="name">${esc(k.name)}</div></div>
+ <div class="list" style="margin-top:12px">${g.items.map(i=>`<div class="li"><div class="grow"><div class="t">${i[0]}</div><div class="meter"><i style="width:${i[1]/i[2]*100}%;background:${k.col}"></i></div></div><span class="score">${i[1]}<span style="color:var(--ink3)">/${i[2]}</span></span></div>`).join('')}</div>
+ <p class="note">Marks are entered by your lecturer and can change until the final grade is approved.</p>`}
+function barcode(id){let x=0,s='';const seed=[...id].map(Number);for(let i=0;i<70;i++){const w=1+((seed[i%seed.length]+i*7)%3);if(i%2===0)s+=`<rect x="${x}" y="0" width="${w}" height="54"/>`;x+=w+1}return `<svg viewBox="0 0 ${x} 54" preserveAspectRatio="none" aria-hidden="true">${s}</svg>`}
+V.pass=()=>`<div class="top"><h1>Student ID</h1></div><div class="cols"><section>
+ <div class="pass"><div class="rowp"><div class="org">Student card<span class="ar" lang="ar" dir="rtl">بطاقة الطالب</span></div><div class="yr">2026-27</div></div>
+ <div class="nm">${esc(ME.name)}</div><div class="pg">${esc(ME.prog)}</div>
+ <div class="pf"><div><small>Student number</small><b>${ME.id}</b></div><div><small>Valid until</small><b>Aug 2027</b></div></div>
+ <div class="code">${barcode(ME.id)}<small>${ME.id}</small></div></div>
+ <p class="note">Show this at the library gate and exam halls.</p>
+ <button class="btn ghost" onclick="go('newreq/idcard')">Lost your card? Request a new one</button>
+</section><section> <div class="h2">Notifications</div>
+ <div class="list">${[['deadlines','Deadline reminders','The evening before anything is due'],['requests','Request updates','When a request moves to the next step'],['news','University news','Registration dates, closures, events']].map(([k,t,d])=>`<div class="li"><div class="grow"><div class="t">${t}</div><div class="d">${d}</div></div><button class="sw" role="switch" aria-checked="${st.prefs[k]}" aria-label="${t}" onclick="togglePref('${k}')"></button></div>`).join('')}</div>
+ <div class="h2">Account</div>
+ <div class="list"><div class="li"><div class="grow t">Balance due</div><span class="score">BD 5.000</span></div><div class="li"><div class="grow t">Language</div><span class="v">English</span></div></div>
+ <button class="btn red" onclick="signOut()">Sign out</button></section></div>`;
+/* ---------- actions ---------- */
+Object.assign(window,{go,
+ signIn(){st.signed=true;save();location.hash='home';render()},
+ signOut(){st.signed=false;save();location.hash='';render()},
+ pickDay(i){st.day=i;save();render()},
+ pick(b){const g=b.parentNode;[...g.children].forEach(x=>x.setAttribute('aria-pressed',x===b));window._f[g.dataset.k]=b.dataset.v},
+ submitReq(type){const r={id:nextId(),type,purpose:_f.p,delivery:_f.dl,lang:_f.lang,created:iso(now()),stage:0,notes:$('#n').value.trim()};st.requests.unshift(r);save();location.hash='req/'+r.id;setTimeout(()=>toast('Request sent. Your reference is '+r.id),60)},
+ advance(id){const r=st.requests.find(x=>x.id===id);if(r.stage<2)r.stage++;save();render();toast(r.stage===2?TYPES[r.type].name+' is ready':'Now '+STAGES[r.stage].toLowerCase())},
+ cancelReq(id){st.requests=st.requests.filter(x=>x.id!==id);save();location.hash='requests';setTimeout(()=>toast('Request cancelled'),60)},
+ confirmBooking(d){const ap=(+_bk.time.split(':')[0]>=9&&+_bk.time.split(':')[0]<12)?'am':'pm';st.booking={date:d,time:_bk.time+' '+ap,mode:_bk.mode};save();render();toast('Booked for '+fDate(D(d))+' at '+_bk.time+' '+ap)},
+ cancelBooking(){st.booking=null;window._bk=null;save();render();toast('Appointment cancelled')},
+ togglePref(k){st.prefs[k]=!st.prefs[k];save();render()},
+ rr(){render()},
+ demo(h){if(!st.signed){st.signed=true;save()}location.hash=h;render()},
+ resetDemo(){try{for(const k in S0)localStorage.removeItem('ssp_'+k)}catch(e){}for(const k in S0)st[k]=JSON.parse(JSON.stringify(S0[k]));window._bk=null;location.hash='';render()}
+});
+/* ---------- router ---------- */
+const TABS=[['home','Today','today'],['schedule','Timetable','cal'],['requests','Requests','req'],['grades','Grades','grade'],['pass','ID','pass']];
+function tabs(){const root=(location.hash.slice(1)||'home').split('/')[0];const cur={deadlines:'home',book:'home',newreq:'requests',req:'requests',course:'grades'}[root]||root;const open=st.requests.filter(r=>r.stage<2).length;
+ $('#tabbar').innerHTML=`<div class="brand deskonly"><b>Student Services</b><span>MIS 445 prototype</span><span class="ar" lang="ar" dir="rtl">خدمات الطلبة</span></div>`+TABS.map(([k,l,ic])=>`<button aria-current="${cur===k?'page':'false'}" onclick="go('${k}')">${I[ic]}${k==='requests'&&open?`<span class="badge">${open}</span>`:''}<span>${l}</span></button>`).join('')+`<div class="team deskonly"><b>Group members</b>Yousef Hazem Abdulwahed<br>Alanood Ahmed Alkaabi<br>Abdulaziz Aljazzaf</div><div class="me deskonly"><span class="avatar">${ME.init}</span><span>${esc(ME.name)}<br><span style="color:var(--ink2)">${ME.id}</span></span></div><button class="signout deskonly" onclick="signOut()">Sign out</button>`}
+function render(){const sc=$('#screen');
+ if(!st.signed){sc.innerHTML=V.welcome();$('#tabbar').style.display='none';$('#status').classList.add('inv');$('#phone').style.background='#123B3F';$('#phone').classList.add('out');return}
+ $('#tabbar').style.display='flex';$('#phone').style.background='';$('#phone').classList.remove('out');
+ const [r,a]=(location.hash.slice(1)||'home').split('/');sc.innerHTML='<div class="wrap">'+(V[r]||V.home)(a)+'</div>';tabs();
+ $('#status').classList.remove('inv');
+}
+window.render=render;
+function tick(){const n=now();let h=n.getHours()%12||12;$('#clock').textContent=h+':'+String(n.getMinutes()).padStart(2,'0');
+ const cd=$('#countdown');if(cd&&(location.hash.slice(1)||'home')==='home'&&st.signed)render()}
+setInterval(tick,30000);tick();
+let wasDesk=desk();addEventListener('resize',()=>{if(desk()!==wasDesk){wasDesk=desk();render()}});
+addEventListener('hashchange',()=>{$('#toast').classList.remove('show');render();$('#screen').scrollTop=0});
+render();
+}
+</script>
+</body>
+</html>
